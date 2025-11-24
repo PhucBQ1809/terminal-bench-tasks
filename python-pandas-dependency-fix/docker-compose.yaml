@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  agent:
+    build: .
+    container_name: python-pandas-agentd
+    volumes:
+      - .:/app
+    command: /bin/bash
+    tty: true
+    stdin_open: true

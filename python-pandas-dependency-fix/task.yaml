@@ -1,0 +1,30 @@
+id: python-pandas-dependency-fix
+title: Fix Broken Python Build due to Pandas Deprecation and Dependency Conflicts
+description: |
+  You are migrating a legacy ETL (Extract, Transform, Load) script to a new Docker container. 
+  The script `etl_script.py` was written 2 years ago. 
+  
+  When you try to run it, it crashes with an `AttributeError` because the environment installs the latest version of `pandas`, which has removed the `DataFrame.append` method (deprecated since 1.4, removed in 2.0).
+  
+  Your tasks:
+  1. Run the script to identify the specific error.
+  2. Refactor `src/etl_script.py` to use `pandas.concat` instead of `.append` (which is the modern, correct approach). Do NOT just downgrade pandas to an ancient version; the goal is to modernize the code.
+  3. Update `requirements.txt` to pin dependencies to stable, compatible versions to prevent future breakages (e.g., pin `pandas` and `numpy`).
+  4. Ensure the script runs successfully and produces the expected output.
+
+domain: Fixing Broken Build Environments
+difficulty: medium
+objectives:
+  - Identify library version incompatibility (Pandas 2.x vs Legacy Code).
+  - Refactor Python code to replace deprecated API (`append` -> `concat`).
+  - Secure the build by pinning versions in `requirements.txt`.
+  - Verify the script runs without errors.
+inputs:
+  - src/etl_script.py: The buggy script.
+  - requirements.txt: The loose dependency file.
+expected_outputs:
+  - The script execution must end with "ETL Process Completed Successfully."
+  - `requirements.txt` must have explicit versions (e.g., `pandas==2.x.x`).
+constraints:
+  - You must NOT simply downgrade pandas to < 2.0. You must fix the code logic.
+  - The solution must work on the provided Python 3.9 base image.

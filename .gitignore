@@ -3,9 +3,11 @@
 bin/
 target/
 
-# Python cache
+# Python cache & Environment
 __pycache__/
 .pytest_cache/
+venv/
+env/
 
 # OS generated files
 .DS_Store
@@ -16,7 +18,7 @@ Thumbs.db
 *.hprof
 dump.txt
 
-# Backup files
+# Backup files (Quan trọng cho các bài task)
 *.bak
 *.swp
 
