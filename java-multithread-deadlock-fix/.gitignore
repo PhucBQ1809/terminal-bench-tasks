@@ -1,0 +1,28 @@
+# Java class files
+*.class
+bin/
+target/
+
+# Python cache
+__pycache__/
+.pytest_cache/
+
+# OS generated files
+.DS_Store
+Thumbs.db
+
+# Logs and dumps
+*.log
+*.hprof
+dump.txt
+
+# Backup files
+*.bak
+*.swp
+
+# IntelliJ IDEA specific files
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
