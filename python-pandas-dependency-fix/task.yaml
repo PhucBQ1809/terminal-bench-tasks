@@ -1,30 +1,46 @@
-id: python-pandas-dependency-fix
-title: Fix Broken Python Build due to Pandas Deprecation and Dependency Conflicts
-description: |
-  You are migrating a legacy ETL (Extract, Transform, Load) script to a new Docker container. 
-  The script `etl_script.py` was written 2 years ago. 
-  
-  When you try to run it, it crashes with an `AttributeError` because the environment installs the latest version of `pandas`, which has removed the `DataFrame.append` method (deprecated since 1.4, removed in 2.0).
-  
-  Your tasks:
-  1. Run the script to identify the specific error.
-  2. Refactor `src/etl_script.py` to use `pandas.concat` instead of `.append` (which is the modern, correct approach). Do NOT just downgrade pandas to an ancient version; the goal is to modernize the code.
-  3. Update `requirements.txt` to pin dependencies to stable, compatible versions to prevent future breakages (e.g., pin `pandas` and `numpy`).
-  4. Ensure the script runs successfully and produces the expected output.
+type: uploaded file
+fileName: task.yaml
+fullContent:
+author_email: "sre@example.com"
+author_name: "Dependency Architect"
+category: "software_engineering"
+difficulty: "medium"
+disable_asciinema: false
+estimated_duration_sec: 900.0
+expert_time_estimate_min: 10
+instruction: |
+  **Context**
+  You are setting up a data processing pipeline for a legacy project. The source code (`src/process_data.py`) has been running in production for years. However, when you try to set up the environment on a new machine using the provided `requirements.txt`, the application crashes immediately.
 
-domain: Fixing Broken Build Environments
-difficulty: medium
-objectives:
-  - Identify library version incompatibility (Pandas 2.x vs Legacy Code).
-  - Refactor Python code to replace deprecated API (`append` -> `concat`).
-  - Secure the build by pinning versions in `requirements.txt`.
-  - Verify the script runs without errors.
-inputs:
-  - src/etl_script.py: The buggy script.
-  - requirements.txt: The loose dependency file.
-expected_outputs:
-  - The script execution must end with "ETL Process Completed Successfully."
-  - `requirements.txt` must have explicit versions (e.g., `pandas==2.x.x`).
-constraints:
-  - You must NOT simply downgrade pandas to < 2.0. You must fix the code logic.
-  - The solution must work on the provided Python 3.9 base image.
+  The error logs indicate an `AttributeError`, suggesting a mismatch between the code logic and the installed library versions.
+
+  **Environment & Files**
+  - `src/process_data.py`: The data processing script (Do NOT rewrite the logic unless absolutely necessary; prefer environment fixes).
+  - `requirements.txt`: The dependency file defining which libraries to install.
+  - `reproduce_issue.sh`: A script that installs dependencies and runs the app to demonstrate the crash.
+
+  **The Failure**
+  Running `bash reproduce_issue.sh` results in:
+  `AttributeError: 'DataFrame' object has no attribute 'append'`
+
+  **Objectives**
+  1. Analyze the incompatibility between the installed `pandas` version and the code in `src/process_data.py`.
+  2. Fix the issue by modifying `requirements.txt` to pin a compatible version of the library (Recommended) OR strictly refactor the code to support the new library version.
+  3. Ensure `reproduce_issue.sh` runs successfully to completion without errors.
+
+  **Constraints**
+  - You must verify the fix by running `reproduce_issue.sh`.
+  - The script must output "Data processing completed successfully." upon success.
+  - You typically should pin versions in `requirements.txt` (e.g., `package==x.y.z`) to ensure reproducibility.
+
+junior_time_estimate_min: 25
+max_agent_timeout_sec: 600
+max_test_timeout_sec: 180
+parser_name: "pytest"
+run_tests_in_same_shell: false
+tags:
+  - "python"
+  - "pip"
+  - "pandas"
+  - "dependency-management"
+  - "debugging"

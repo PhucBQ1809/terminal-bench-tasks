@@ -2,9 +2,8 @@ version: '3.8'
 services:
   agent:
     build: .
-    container_name: python-pandas-agentd
+    # Mount thư mục hiện tại vào /app để Agent có thể sửa file requirements.txt
     volumes:
       - .:/app
-    command: /bin/bash
-    tty: true
-    stdin_open: true
+    # Giữ container luôn chạy để Agent có thể exec vào thực hiện task
+    command: tail -f /dev/null

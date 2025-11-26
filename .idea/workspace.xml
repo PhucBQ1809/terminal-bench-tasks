@@ -5,9 +5,17 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="303c578e-2d11-487d-8d00-83d479be8c63" name="Changes" comment="TASK-2411: add task python pandas dependencies fix">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/python-pandas-dependency-fix/reproduce_issue.sh" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/python-pandas-dependency-fix/src/process_data.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python-pandas-dependency-fix/Dockerfile" beforeDir="false" afterPath="$PROJECT_DIR$/python-pandas-dependency-fix/Dockerfile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python-pandas-dependency-fix/docker-compose.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/python-pandas-dependency-fix/docker-compose.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python-pandas-dependency-fix/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/python-pandas-dependency-fix/requirements.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python-pandas-dependency-fix/run-tests.sh" beforeDir="false" afterPath="$PROJECT_DIR$/python-pandas-dependency-fix/run-tests.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python-pandas-dependency-fix/solution.sh" beforeDir="false" afterPath="$PROJECT_DIR$/python-pandas-dependency-fix/solution.sh" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python-pandas-dependency-fix/src/etl_script.py" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/python-pandas-dependency-fix/task.yaml" beforeDir="false" afterPath="$PROJECT_DIR$/python-pandas-dependency-fix/task.yaml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/python-pandas-dependency-fix/tests/test_etl.py" beforeDir="false" afterPath="$PROJECT_DIR$/python-pandas-dependency-fix/tests/test_outputs.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
