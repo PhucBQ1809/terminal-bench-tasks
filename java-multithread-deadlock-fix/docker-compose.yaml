@@ -2,9 +2,6 @@ version: '3.8'
 services:
   agent:
     build: .
-    container_name: java-deadlock-agent
     volumes:
       - .:/app
-    command: /bin/bash
-    tty: true
-    stdin_open: true
+    command: tail -f /dev/null

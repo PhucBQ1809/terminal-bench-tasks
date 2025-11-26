@@ -1,16 +1,17 @@
 #!/bin/bash
+# run-tests.sh
 
-if ! python3 -c "import pytest" &> /dev/null; then
-    echo "Installing pytest..."
-    # Install vào local user directory để không cần root
-    pip3 install --user pytest > /dev/null 2>&1
-    # Thêm đường dẫn pip user vào PATH nếu cần
-    export PATH=$PATH:$HOME/.local/bin
+# 1. Cài đặt test dependencies tại thời điểm runtime (theo quy định [cite: 36, 54])
+# Kiểm tra xem pytest đã có chưa, nếu chưa thì cài (để tránh cài lại nhiều lần nếu chạy local)
+if ! command -v pytest &> /dev/null; then
+    echo "Installing test dependencies..."
+    pip3 install pytest --no-cache-dir
 fi
 
-# Đảm bảo script compile/run có quyền thực thi (nếu mount từ host vào)
-chmod +x scripts/*.sh
+# 2. Tạo thư mục output cho test compilation nếu cần (đảm bảo môi trường sạch)
+mkdir -p out
 
-echo "Running Test Suite..."
-# Gọi pytest
-python3 -m pytest tests/test_outputs.py -v
+# 3. Chạy bộ test kiểm tra kết quả
+# -v: verbose (chi tiết)
+# --tb=short: rút gọn traceback lỗi
+python3 -m pytest tests/test_outputs.py -v --tb=short

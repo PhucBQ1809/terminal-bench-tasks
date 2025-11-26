@@ -1,83 +1,97 @@
-import pytest
-import subprocess
 import os
-import time
+import subprocess
+import pytest
+import re
+import signal
 
-# Configuration
-COMPILE_SCRIPT = "./scripts/compile.sh"
-RUN_SCRIPT = "./scripts/run.sh"
-EXPECTED_OUTPUT_STRING = "Processing Complete. Final Total: 20000"
-TIMEOUT_SECONDS = 15  # Application should finish in < 2s, 10s is generous, 15s is safe limit
+# Cấu hình đường dẫn
+JAVA_SOURCE = "src/BankService.java"
+CLASS_OUTPUT_DIR = "out"
+MAIN_CLASS = "BankService"
 
-def run_command(command, timeout=None):
-    """Helper to run shell commands with timeout and capture output."""
+@pytest.fixture(scope="module")
+def source_content():
+    """Đọc nội dung source code để kiểm tra tĩnh (static analysis)."""
+    if not os.path.exists(JAVA_SOURCE):
+        pytest.fail(f"File {JAVA_SOURCE} không tồn tại. Agent đã xóa nhầm file.")
+    with open(JAVA_SOURCE, "r", encoding="utf-8") as f:
+        return f.read()
+
+# --- Test 1: Kiểm tra cấu trúc file và biên dịch ---
+def test_compilation():
+    """
+    Objective: Đảm bảo code sau khi sửa vẫn biên dịch được Java hợp lệ.
+    """
+    if not os.path.exists(CLASS_OUTPUT_DIR):
+        os.makedirs(CLASS_OUTPUT_DIR)
+
+    result = subprocess.run(
+        ["javac", "-d", CLASS_OUTPUT_DIR, JAVA_SOURCE],
+        capture_output=True,
+        text=True
+    )
+    assert result.returncode == 0, f"Biên dịch thất bại:\n{result.stderr}"
+
+# --- Test 2: Kiểm tra Constraints (Ràng buộc của Task) ---
+def test_constraints_synchronization(source_content):
+    """
+    Objective: Kiểm tra Agent không xóa 'synchronized'.
+    Yêu cầu task là: "You cannot simply remove synchronization".
+    """
+    assert "synchronized" in source_content, \
+        "Vi phạm quy tắc: Agent đã xóa từ khóa 'synchronized' thay vì sửa logic deadlock."
+
+def test_constraints_concurrency_level(source_content):
+    """
+    Objective: Đảm bảo Agent không 'cheat' bằng cách giảm số luồng xuống 1.
+    """
+    # Tìm biến NUM_THREADS
+    threads_match = re.search(r'int\s+NUM_THREADS\s*=\s*(\d+);', source_content)
+    if threads_match:
+        num_threads = int(threads_match.group(1))
+        assert num_threads > 1, f"Vi phạm quy tắc: NUM_THREADS bị giảm xuống {num_threads}. Phải giữ tính đa luồng."
+
+    # Tìm biến NUM_TRANSACTIONS
+    trans_match = re.search(r'int\s+NUM_TRANSACTIONS\s*=\s*(\d+);', source_content)
+    if trans_match:
+        num_trans = int(trans_match.group(1))
+        assert num_trans >= 100, "Vi phạm quy tắc: Số lượng transaction quá ít để mô phỏng deadlock."
+
+# --- Test 3: Dynamic Analysis (Chạy ứng dụng để kiểm tra Deadlock) ---
+@pytest.mark.timeout(20) # Timeout tổng cho test case này
+def test_simulation_runs_without_deadlock():
+    """
+    Objective: Chạy ứng dụng thực tế. Nếu Deadlock đã được fix, ứng dụng phải kết thúc.
+    Nếu vẫn còn Deadlock, ứng dụng sẽ treo và pytest sẽ kill sau timeout.
+    """
+    # Đảm bảo đã compile mới nhất
+    subprocess.run(["javac", "-d", CLASS_OUTPUT_DIR, JAVA_SOURCE], check=True)
+
     try:
+        # Chạy Java process với timeout ngắn hơn timeout của pytest một chút
+        # Nếu deadlock, nó sẽ treo mãi mãi -> timeout sẽ bắt được.
         result = subprocess.run(
-            command,
-            shell=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            ["java", "-cp", CLASS_OUTPUT_DIR, MAIN_CLASS],
+            capture_output=True,
             text=True,
-            timeout=timeout
+            timeout=15
         )
-        return result
+
+        # Kiểm tra exit code
+        assert result.returncode == 0, f"Chương trình crash với lỗi:\n{result.stderr}"
+
+        # Kiểm tra thông báo hoàn thành
+        assert "All transactions completed." in result.stdout, \
+            "Chương trình kết thúc nhưng không in ra thông báo hoàn thành. Có thể logic bị sai luồng."
+
     except subprocess.TimeoutExpired:
-        raise
+        pytest.fail("Chương trình bị treo (Time out). Lỗi Deadlock vẫn chưa được khắc phục!")
 
-def test_compilation_success():
-    """Test 1: Verify that the application compiles successfully."""
-    # Ensure we start clean if possible, though not strictly required if script handles it
-    result = run_command(COMPILE_SCRIPT)
-    assert result.returncode == 0, f"Compilation failed. Stderr: {result.stderr}"
-
-def test_execution_no_deadlock():
-    """Test 2: Verify application executes without hanging (Deadlock Fix)."""
-    # If the application deadlocks, this will timeout
-    try:
-        result = run_command(RUN_SCRIPT, timeout=TIMEOUT_SECONDS)
-        assert result.returncode == 0, f"Application exited with error code {result.returncode}"
-    except subprocess.TimeoutExpired:
-        pytest.fail(f"Application timed out after {TIMEOUT_SECONDS}s. Deadlock likely still present.")
-
-def test_output_correctness():
-    """Test 3: Verify the application produces the correct final total."""
-    try:
-        result = run_command(RUN_SCRIPT, timeout=TIMEOUT_SECONDS)
-        assert EXPECTED_OUTPUT_STRING in result.stdout, \
-            f"Expected output '{EXPECTED_OUTPUT_STRING}' not found in stdout."
-    except subprocess.TimeoutExpired:
-        pytest.fail("Application timed out during output check.")
-
-def test_race_condition_consistency():
-    """Test 4: Stress test to ensure race condition is fixed (Result Consistency)."""
-    # Run multiple times to ensure the result is deterministic (20000 every time)
-    # A race condition would often yield results like 19998, 19950, etc.
-    for i in range(3):
-        try:
-            result = run_command(RUN_SCRIPT, timeout=TIMEOUT_SECONDS)
-            assert EXPECTED_OUTPUT_STRING in result.stdout, \
-                f"Run #{i+1}: Output mismatch. Race condition likely persists. Output: {result.stdout.strip()}"
-        except subprocess.TimeoutExpired:
-            pytest.fail(f"Run #{i+1}: Application timed out.")
-
-def test_shared_data_store_thread_safety_keywords():
-    """Test 5: Static analysis of SharedDataStore.java for thread safety mechanisms."""
-    file_path = "src/SharedDataStore.java"
-    assert os.path.exists(file_path), f"{file_path} does not exist."
-    
-    with open(file_path, "r") as f:
-        content = f.read()
-    
-    # The fix requires synchronization. Valid approaches include 'synchronized' keyword,
-    # AtomicInteger, or explicit Locks.
-    valid_mechanisms = ["synchronized", "AtomicInteger", "ReentrantLock", "Lock"]
-    has_mechanism = any(kw in content for kw in valid_mechanisms)
-    
-    assert has_mechanism, \
-        "SharedDataStore.java does not appear to contain thread-safety keywords (synchronized, AtomicInteger, Lock)."
-
-def test_project_structure_integrity():
-    """Test 6: Ensure essential source files still exist."""
-    # Prevents solutions that might delete source files and run pre-compiled binaries
-    assert os.path.exists("src/Main.java"), "src/Main.java is missing."
-    assert os.path.exists("src/Worker.java"), "src/Worker.java is missing."
+# --- Test 4: Kiểm tra tính đúng đắn của logic chuyển tiền (Cơ bản) ---
+def test_balance_integrity_check(source_content):
+    """
+    Objective: Kiểm tra logic cơ bản không bị phá vỡ (ví dụ: in tiền từ không khí).
+    Đây là kiểm tra static đơn giản để đảm bảo hàm withdraw/deposit vẫn tồn tại logic trừ/cộng.
+    """
+    assert "balance += amount" in source_content, "Logic cộng tiền (deposit) có vẻ đã bị xóa."
+    assert "balance -= amount" in source_content, "Logic trừ tiền (withdraw) có vẻ đã bị xóa."

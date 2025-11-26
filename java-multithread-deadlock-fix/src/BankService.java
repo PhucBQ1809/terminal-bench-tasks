@@ -1,9 +1,3 @@
-#!/bin/bash
-
-# This script overwrites the broken BankService.java with the fixed version
-# capable of avoiding deadlocks using Lock Ordering (Resource Hierarchy).
-
-cat << 'EOF' > src/BankService.java
 import java.util.Random;
 
 public class BankService {
@@ -62,12 +56,14 @@ public class BankService {
     }
 
     public void transfer(Account from, Account to, int amount) {
-        // FIX: Enforce global lock ordering based on Account ID to prevent circular wait
-        Account firstLock = from.id < to.id ? from : to;
-        Account secondLock = from.id < to.id ? to : from;
+        // BUG: Locking order is dependent on function arguments.
+        // If T1 calls transfer(A, B) and T2 calls transfer(B, A) concurrently,
+        // T1 locks A, T2 locks B -> Deadlock when they try to acquire the second lock.
+        synchronized (from) {
+            // Artificial delay to increase deadlock probability
+            try { Thread.sleep(1); } catch (InterruptedException e) {}
 
-        synchronized (firstLock) {
-            synchronized (secondLock) {
+            synchronized (to) {
                 if (from.withdraw(amount)) {
                     to.deposit(amount);
                     // System.out.println("Transferred " + amount + " from " + from.id + " to " + to.id);
@@ -98,6 +94,3 @@ public class BankService {
         }
     }
 }
-EOF
-
-echo "Applied fix to src/BankService.java"

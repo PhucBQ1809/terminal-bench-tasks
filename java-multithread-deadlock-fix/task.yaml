@@ -1,47 +1,49 @@
-id: java-multithread-deadlock-fix
-title: Diagnose and Fix Deadlock and Race Conditions in Java Application
-description: |
-  You are tasked with debugging a legacy Java application used for processing configuration files. The application, comprised of `Main.java`, `Worker.java`, and `SharedDataStore.java`, utilizes multiple threads to process data concurrently. However, users have reported two critical issues:
-  1. The application frequently hangs indefinitely during execution (Deadlock).
-  2. When it does finish, the final calculated totals are inconsistent across runs (Race Condition).
+author_email: "dev@example.com"
+author_name: "Terminal-Bench Contributor"
+category: "software_engineering"
+difficulty: "hard"
+disable_asciinema: false
+estimated_duration_sec: 1200.0
+expert_time_estimate_min: 15
+instruction: |
+  **Context**
+  You are a backend engineer maintaining a legacy financial transaction simulator. The application, `BankService`, is designed to handle high-volume concurrent transfers between accounts using multi-threading. However, reports indicate that the process intermittently "freezes" (hangs) when under heavy load, stopping all transaction processing without crashing or throwing errors.
 
-  Your workflow is as follows:
-  1. Compile and run the application using the provided `compile.sh` and `run.sh` scripts (or manually via `javac`) to reproduce the hanging behavior.
-  2. While the application is hung, use terminal tools like `jps` to find the Process ID and `jstack` to generate a thread dump. Analyze the dump to identify the deadlock and the specific lines of code causing the circular dependency.
-  3. Analyze the source code to identify the race condition in the shared data accumulation logic.
-  4. Edit the source code (using `vi`, `nano`, or similar) to resolve both the deadlock and the race condition. You may use `synchronized` blocks, `ReentrantLock`, or atomic variables as you see fit, provided the data integrity is maintained.
-  5. Verify the fix by running the application multiple times to ensure it terminates successfully and produces the consistent, correct total.
+  Preliminary investigation suggests a threading issue where the application enters a state of resource starvation or circular wait.
 
-domain: Bug Fixes
-difficulty: medium
-objectives:
-  - Identify the cause of the application deadlock using JVM diagnostic tools.
-  - Refactor the code to eliminate the circular wait condition causing the deadlock.
-  - Identify and fix the race condition in the `SharedDataStore` class to ensure thread-safe updates.
-  - Ensure the application compiles without errors.
-  - Ensure the application executes to completion without hanging and prints the correct deterministic result.
-inputs:
-  - src/Main.java: Entry point setting up the thread pool.
-  - src/Worker.java: Runnable implementation that processes tasks.
-  - src/SharedDataStore.java: Class holding shared state/counters.
-  - config/data.csv: Input data file simulating workload.
-  - scripts/compile.sh: Helper script to compile the source.
-  - scripts/run.sh: Helper script to execute the application.
-expected_outputs:
-  - The application stdout must end with "Processing Complete. Final Total: 20000".
-  - The application must exit with status code 0.
-  - The `jstack` output on the fixed application should not show threads in "BLOCKED" state due to deadlock.
-edge_cases:
-  - The fix must handle high thread contention without losing data updates.
-  - The solution must prevent deadlock regardless of thread scheduling order (e.g., avoiding nested locks in inconsistent orders).
-constraints:
-  - The task must be solved entirely offline within the provided container.
-  - You must not change the logic of *what* is calculated, only *how* it is synchronized.
-  - External libraries are not available; use standard JDK 11+ concurrency utilities (java.util.concurrent).
-max_agent_timeout_sec: 900
+  **Environment & Files**
+  - `src/BankService.java`: The source code containing the `transfer()` logic and synchronization blocks.
+  - `reproduce_issue.sh`: A script that compiles the code and spawns multiple threads to simulate high concurrency.
+  - Standard JDK tools are available (javac, java, jstack, jcmd, etc.).
+
+  **The Failure**
+  When you run `bash reproduce_issue.sh`, the application will start processing transactions. After a short period, it will likely stop printing "Transaction completed" logs, but the process will remain active (hanging).
+
+  **Objectives**
+  1. Analyze the running process when it hangs to confirm the cause (suspected deadlock).
+  2. Identify the specific circular dependency in the locking logic within `src/BankService.java`.
+  3. Refactor the `transfer` method in `src/BankService.java` to resolve the deadlock while maintaining thread safety.
+  4. Verify the fix by running `reproduce_issue.sh` again; it should run to completion (processing all 1000 planned transactions) without freezing.
+
+  **Constraints**
+  - You must only modify `src/BankService.java`.
+  - You cannot simply remove synchronization; the transfer must remain thread-safe.
+  - You must solve this using standard JDK libraries only (no external dependencies).
+  - The solution must be deterministic (it must not rely on Thread.sleep hacks to avoid the race condition).
+
+  **Hints & Troubleshooting**
+  - Use `jps` to find the Process ID (PID) of the hanging application.
+  - Use `jstack <PID>` to capture a thread dump. Look specifically for "Found one Java-level deadlock" at the bottom of the output.
+  - Examine the order in which locks (account objects) are acquired. A common deadlock fix involves enforcing a global lock ordering based on unique account IDs.
+  - Ensure you handle exceptions properly so locks are always released (e.g., inside a `finally` block if using explicit Locks, though `synchronized` handles this automatically).
+junior_time_estimate_min: 30
+max_agent_timeout_sec: 600
 max_test_timeout_sec: 300
-hints:
-  - Use `jps -l` to find the Java process ID quickly.
-  - Run `jstack <pid>` > `dump.txt` to capture the state of hung threads. Look for "Found one Java-level deadlock" at the bottom of the dump.
-  - Check if `SharedDataStore` uses `synchronized` on methods or blocks, and if `Worker` threads acquire locks in a different order (e.g., Lock A then Lock B vs. Lock B then Lock A).
-  - For the race condition, consider if `++` operations on primitives are atomic (they are not) and look into `AtomicInteger` or proper synchronization.
+parser_name: "pytest"
+run_tests_in_same_shell: false
+tags:
+  - "java"
+  - "debugging"
+  - "concurrency"
+  - "deadlock"
+  - "cli_tools"
